@@ -764,7 +764,6 @@ class InvestigatorTool(QMainWindow):
         osintDatabaseSearchAction.triggered.connect(self.show_osint_database_search)
         osintMenu.addAction(osintDatabaseSearchAction)
         
-        # Social menu with icons
         additionalToolsMenu = menubar.addMenu('Social')
         randomPersonalityAction = QAction(QIcon('imgs/random_personality.png'), 'Random Personality Generator', self)
         randomPersonalityAction.setShortcut('Ctrl+R')
