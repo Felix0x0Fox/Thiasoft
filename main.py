@@ -258,7 +258,6 @@ class FTPChecker(QDialog):
         self.check_button.setEnabled(True)
         self.result_text.append("All FTP servers checked for default passwords.")
 
-# Worker thread for FTP default password checking
 class FTPCheckerWorker(QThread):
     log = pyqtSignal(str)
     check_finished = pyqtSignal()
@@ -281,7 +280,7 @@ class FTPCheckerWorker(QThread):
                     port = int(port)
                 except ValueError:
                     server = server_info.strip()
-                    port = 21  # Default FTP port
+                    port = 21 
 
                 ftp = ftplib.FTP()
 
