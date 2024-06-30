@@ -4,6 +4,7 @@ import math
 import smtplib
 import requests
 import ftplib
+import os
 import random
 import subprocess
 from bs4 import BeautifulSoup
@@ -82,7 +83,7 @@ def generate_personality():
     return personality
 
 
-# Fake Card Generator
+#генератор фейковых карт
 def generate_luhn_digit(number):
     """Вычисляет контрольную цифру по алгоритму Луна"""
     def digits_of(n):
@@ -258,6 +259,7 @@ class FTPChecker(QDialog):
         self.check_button.setEnabled(True)
         self.result_text.append("All FTP servers checked for default passwords.")
 
+#фтп брутфорсер(тупо чекает базовые пароли)
 class FTPCheckerWorker(QThread):
     log = pyqtSignal(str)
     check_finished = pyqtSignal()
@@ -280,7 +282,7 @@ class FTPCheckerWorker(QThread):
                     port = int(port)
                 except ValueError:
                     server = server_info.strip()
-                    port = 21 
+                    port = 21  #дефолтный фтп порт
 
                 ftp = ftplib.FTP()
 
@@ -635,6 +637,57 @@ class IPInfo(QDialog):
         except requests.RequestException as e:
             QMessageBox.critical(self, "Error", f"Failed to get IP info: {e}")
 
+class KadickRunner:
+    def __init__(self):
+        self.exe_path = os.path.abspath('apps/kadick/kadick.exe')
+
+    def launch_exe(self):
+        try:
+            if not os.path.exists(self.exe_path):
+                raise FileNotFoundError(f"File not found: {self.exe_path}")
+
+            if os.name == 'nt':  # Windows
+                subprocess.Popen(['cmd', '/c', 'start', 'cmd', '/k', self.exe_path], shell=True)
+            elif os.name == 'posix':  # Linux and macOS
+                subprocess.Popen(['x-terminal-emulator', '-e', self.exe_path])
+            else:
+                raise OSError(f"Unsupported OS: {os.name}")
+
+            print(f"Executable '{self.exe_path}' successfully launched.")
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"Error launching executable: {e}")
+
+    def run(self):
+        self.launch_exe()
+
+
+#изначально тут был TeleShadow, но сейчас DcRat
+class TeleShadow:
+    def __init__(self):
+        self.app_name = "DcRat.exe"
+
+    def launch_app(self):
+        try:
+            app_dir = os.path.abspath('apps')
+            app_path = os.path.join(app_dir, self.app_name)
+            
+            if not os.path.exists(app_path):
+                raise FileNotFoundError(f"File not found: {app_path}")
+            
+            app_path = os.path.normpath(app_path)
+
+            subprocess.Popen(app_path)
+            print(f"Application '{self.app_name}' successfully launched.")
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+
+        except Exception as e:
+            print(f"Error launching application: {e}")
+
+            
 class WebScraper(QDialog):
     def __init__(self):
         super().__init__()
@@ -693,11 +746,11 @@ class InvestigatorTool(QMainWindow):
         
         menubar = self.menuBar()
         
-        #MAIN MENU
+        #Мейн меню
         mainMenu = menubar.addMenu('Main')
         
         showDialogAction = QAction(QIcon('imgs/telegram.png'), 'We on Telegram', self)
-        showDialogAction.setShortcut('Ctrl+T')
+        showDialogAction.setShortcut('Ctrl+C')
         showDialogAction.triggered.connect(self.show_tg)
         mainMenu.addAction(showDialogAction)
         
@@ -716,6 +769,7 @@ class InvestigatorTool(QMainWindow):
         exitAction.triggered.connect(self.close)
         mainMenu.addAction(exitAction)
         
+        #ТУЛЫ
         toolsMenu = menubar.addMenu('Tools')
         smtpAction = QAction(QIcon('imgs/smtp.png'), 'SMTP Mailer', self)
         smtpAction.setShortcut('Ctrl+M')
@@ -737,11 +791,28 @@ class InvestigatorTool(QMainWindow):
         scraperAction.triggered.connect(self.show_web_scraper)
         toolsMenu.addAction(scraperAction)
         
+        showDialogAction = QAction(QIcon('imgs/qtox.png'), 'QTox Install', self)
+        showDialogAction.setShortcut('Ctrl+X')
+        showDialogAction.triggered.connect(self.show_qtox)
+        toolsMenu.addAction(showDialogAction)
+        
+        showDialogAction = QAction(QIcon('imgs/dcrat.png'), 'DCRat', self)
+        showDialogAction.setShortcut('Ctrl+T')
+        showDialogAction.triggered.connect(self.show_teleshadow)
+        toolsMenu.addAction(showDialogAction)
+        
+        showDialogAction = QAction(QIcon('imgs/kadick.png'), 'KadickClient', self)
+        showDialogAction.setShortcut('Ctrl+K')
+        showDialogAction.triggered.connect(self.show_kadick)
+        toolsMenu.addAction(showDialogAction)
+        
         nmapAction = QAction(QIcon('imgs/nmap.png'), 'Nmap Tool', self)
         nmapAction.setShortcut('Ctrl+N')
         nmapAction.triggered.connect(self.show_nmap_tool)
         toolsMenu.addAction(nmapAction)
         
+        
+        #осинт
         osintMenu = menubar.addMenu('Osint')
         osintAction = QAction(QIcon('imgs/osint.png'), 'OSINT Framework', self)
         osintAction.setShortcut('Ctrl+O')
@@ -763,6 +834,7 @@ class InvestigatorTool(QMainWindow):
         osintDatabaseSearchAction.triggered.connect(self.show_osint_database_search)
         osintMenu.addAction(osintDatabaseSearchAction)
         
+        #социальное
         additionalToolsMenu = menubar.addMenu('Social')
         randomPersonalityAction = QAction(QIcon('imgs/random_personality.png'), 'Random Personality Generator', self)
         randomPersonalityAction.setShortcut('Ctrl+R')
@@ -805,6 +877,15 @@ class InvestigatorTool(QMainWindow):
         proxy_scraper = ProxyScraper()
         proxy_scraper.exec_()
         
+    def show_teleshadow(self):
+        teleshadow = TeleShadow()
+        teleshadow.launch_app()
+        
+    def show_kadick(self):
+        kadick = KadickRunner()
+        kadick.run()  
+
+        
     def show_user_agent_generator(self):
         user_agent_dialog = UserAgentGenerator()
         user_agent_dialog.exec_()
@@ -824,6 +905,13 @@ class InvestigatorTool(QMainWindow):
     def show_tg (self):
         url = "https://t.me/thiasoft"
         QDesktopServices.openUrl(QUrl(url))
+        
+        
+    def show_qtox(self):
+        url = "https://github.com/qTox/qTox/releases/download/v1.17.6/setup-qtox-x86_64-release.exe"
+        QDesktopServices.openUrl(QUrl(url))
+
+#Я ХЗ ШО ЭТО ЗА ГОВНО, НЕ ЧИТАЙТЕ ЭТОТ КОД ПЖ
 
     def show_ip_logger(self):
         url = "https://iplogger.org/ru/location-tracker/"
